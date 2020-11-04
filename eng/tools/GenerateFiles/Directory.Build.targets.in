@@ -22,22 +22,33 @@
   </ItemGroup>
 
   <ItemGroup>
-    <!-- Use the same NETCore shared framework as repo built against. -->
+    <!-- Use the same NETCore shared framework as repo built against except when building product code in servicing. -->
     <KnownFrameworkReference
-      Update="@(KnownFrameworkReference->WithMetadataValue('Identity', 'Microsoft.NETCore.App')->WithMetadataValue('TargetFramework', '${KnownAppHostPackOrFrameworkReferenceTfm}'))"
-      DefaultRuntimeFrameworkVersion="${MicrosoftNETCoreAppRuntimeVersion}"
-      LatestRuntimeFrameworkVersion="${MicrosoftNETCoreAppRuntimeVersion}"
-      TargetingPackVersion="${MicrosoftNETCoreAppRefPackageVersion}" />
+        Update="@(KnownFrameworkReference->WithMetadataValue('Identity', 'Microsoft.NETCore.App')->WithMetadataValue('TargetFramework', '${KnownAppHostPackOrFrameworkReferenceTfm}'))"
+        LatestRuntimeFrameworkVersion="${MicrosoftNETCoreAppRuntimeVersion}">
+      <!--
+        Use $(TargetLatestRuntimePatch) to explicitly control whether assemblies build against default (false) or
+        latest (true). When that property is not set, SDK uses default metadata in most cases but published apps
+        e.g. tool projects use latest.
+      -->
+      <DefaultRuntimeFrameworkVersion
+          Condition=" '$(IsServicingBuild)' != 'true' ">${MicrosoftNETCoreAppRuntimeVersion}</DefaultRuntimeFrameworkVersion>
+      <TargetingPackVersion
+          Condition=" '$(IsServicingBuild)' != 'true' ">${MicrosoftNETCoreAppRefPackageVersion}</TargetingPackVersion>
+    </KnownFrameworkReference>
 
-    <!-- Use the just-built ASP.NET Core shared framework if available. -->
+    <!-- Use the just-built ASP.NET Core shared framework if available except when building product code in servicing. -->
     <KnownFrameworkReference
-      Update="@(KnownFrameworkReference->WithMetadataValue('Identity', 'Microsoft.AspNetCore.App')->WithMetadataValue('TargetFramework', '${KnownAppHostPackOrFrameworkReferenceTfm}'))"
-      Condition=" $(UpdateAspNetCoreKnownFramework) AND
-        EXISTS('$(DOTNET_ROOT)\shared\Microsoft.AspNetCore.App\${MicrosoftAspNetCoreAppRuntimePackageVersion}') "
-      DefaultRuntimeFrameworkVersion="${MicrosoftAspNetCoreAppRuntimePackageVersion}"
-      LatestRuntimeFrameworkVersion="${MicrosoftAspNetCoreAppRuntimePackageVersion}"
-      TargetingPackVersion="${MicrosoftAspNetCoreAppRefPackageVersion}"
-      RuntimePackRuntimeIdentifiers="${SupportedRuntimeIdentifiers}" />
+        Update="@(KnownFrameworkReference->WithMetadataValue('Identity', 'Microsoft.AspNetCore.App')->WithMetadataValue('TargetFramework', '${KnownAppHostPackOrFrameworkReferenceTfm}'))"
+        Condition=" $(UpdateAspNetCoreKnownFramework) AND
+          EXISTS('$(DOTNET_ROOT)\shared\Microsoft.AspNetCore.App\${MicrosoftAspNetCoreAppRuntimePackageVersion}') "
+        LatestRuntimeFrameworkVersion="${MicrosoftAspNetCoreAppRuntimePackageVersion}"
+        RuntimePackRuntimeIdentifiers="${SupportedRuntimeIdentifiers}">
+      <DefaultRuntimeFrameworkVersion
+          Condition=" '$(IsServicingBuild)' != 'true' ">${MicrosoftAspNetCoreAppRuntimePackageVersion}</DefaultRuntimeFrameworkVersion>
+      <TargetingPackVersion
+          Condition=" '$(IsServicingBuild)' != 'true' ">${MicrosoftAspNetCoreAppRefPackageVersion}</TargetingPackVersion>
+    </KnownFrameworkReference>
 
     <PackageReference Include="Microsoft.Net.Compilers.Toolset"
       Version="${MicrosoftNetCompilersToolsetPackageVersion}"
